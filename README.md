@@ -1,25 +1,54 @@
 ### Hexlet tests and linter status:
-[![Actions Status](https://github.com/georg-remer/python-project-lvl3/workflows/hexlet-check/badge.svg)](https://github.com/georg-remer/python-project-lvl3/actions)
-[![Maintainability](https://api.codeclimate.com/v1/badges/3737ba3c97809ed2e668/maintainability)](https://codeclimate.com/github/georg-remer/python-project-lvl3/maintainability)
-[![Test Coverage](https://api.codeclimate.com/v1/badges/3737ba3c97809ed2e668/test_coverage)](https://codeclimate.com/github/georg-remer/python-project-lvl3/test_coverage)
-[![wemake-python-styleguide](https://img.shields.io/badge/style-wemake-000000.svg)](https://github.com/wemake-services/wemake-python-styleguide)
+[![Actions Status](https://github.com/sgmdlt/python-project-lvl3/workflows/hexlet-check/badge.svg)](https://github.com/sgmdlt/python-project-lvl3/actions)
+[![Python CI](https://github.com/sgmdlt/python-project-lvl3/actions/workflows/python-ci.yml/badge.svg)](https://github.com/sgmdlt/python-project-lvl3/actions/workflows/python-ci.yml)
+[![Maintainability](https://api.codeclimate.com/v1/badges/d9a8d018be5322f613df/maintainability)](https://codeclimate.com/github/sgmdlt/python-project-lvl3/maintainability)
+[![Test Coverage](https://api.codeclimate.com/v1/badges/d9a8d018be5322f613df/test_coverage)](https://codeclimate.com/github/sgmdlt/python-project-lvl3/test_coverage)
 
-Page loader is a utility that downloads web page and saves it locally.
+# page-loader
+### **page-loader** is a simple cli-utility to download web pages
+---
+## Installation
 
-## Installation and usage
+Use the package manager [pip](https://pip.pypa.io/en/stable/) to install **page-loader**.
 
+```bash
+pip install --user git+https://github.com/sgmdlt/python-project-lvl3.git
 ```
-git clone https://github.com/georg-remer/python-project-lvl3.git
-make package-install
-page-loader -h
+
+## Usage
+
+### As library function
+
+```python
+from page_loader import download
+
+file_path = download('https://ru.hexlet.io/courses', '/var/tmp')
+print(file_path)  # => '/var/tmp/ru-hexlet-io-courses.html'
 ```
 
-### Download page
-[![asciicast](https://asciinema.org/a/398398.svg)](https://asciinema.org/a/398398)
+### As CLI util
 
-### Download page with images
-[![asciicast](https://asciinema.org/a/jV9ubBg5xArCRe2xqBNaCrwMD.svg)](https://asciinema.org/a/jV9ubBg5xArCRe2xqBNaCrwMD)
+```bash
+$ page-loader --help
+usage: page-loader [options] <url>
 
-### Download page with all local sources
-[![asciicast](https://asciinema.org/a/ZJMvSpO82MNoUngmlbQqebnxY.svg)](https://asciinema.org/a/ZJMvSpO82MNoUngmlbQqebnxY)
+Download web-pages and saves localy
 
+positional arguments:
+  url                   url to download
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -o OUTPUT, --output OUTPUT
+                        output dir (default: [current directory])
+  -l {DEBUG,WARNING}, --log-level {DEBUG,WARNING}
+                        sets log level (default: WARNING)
+
+
+$ page-loader --output /var/tmp https://ru.hexlet.io/courses
+/var/tmp/ru-hexlet-io-courses.html
+```
+
+## Usage example
+
+[![asciicast](https://asciinema.org/a/OQojp3sUpmiDATbTwMCJKnqaC.svg)](https://asciinema.org/a/OQojp3sUpmiDATbTwMCJKnqaC)

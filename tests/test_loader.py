@@ -1,105 +1,57 @@
-"""Loader tests."""
-
 import os
-import tempfile
+from urllib.parse import urljoin
 
 import pytest
-
-from page_loader.loader import download
+from page_loader.loader import download, download_resources
+from page_loader.url import make_local_name
+from tests.utils import get_fixture, LOCAL_URL, URL
 
 
 @pytest.fixture
-def assets():
-    """Necessary assets, read from files.
-
-    Returns:
-        dict
-    """
-    assets = {
-        'page_expected': {
-            'path': 'tests/fixtures/ru-hexlet-io-courses_expected.html',
-        },
-        'page': {
-            'path': 'tests/fixtures/ru-hexlet-io-courses.html',
-            'url': 'https://ru.hexlet.io/courses',
-            'name': 'ru-hexlet-io-courses.html',
-        },
-        'link_relative': {
-            'path': 'tests/fixtures/ru-hexlet-io-courses-reviews.html',
-            'url': 'https://ru.hexlet.io/courses/reviews',
-            'name': 'ru-hexlet-io-courses-reviews.html',
-        },
-        'link_absolute': {
-            'path': 'tests/fixtures/ru-hexlet-io-tracks.html',
-            'url': 'https://ru.hexlet.io/tracks',
-            'name': 'ru-hexlet-io-tracks.html',
-        },
-        'link_full_url': {
-            'path': 'tests/fixtures/ru-hexlet-io-about.html',
-            'url': 'https://ru.hexlet.io/about',
-            'name': 'ru-hexlet-io-about.html',
-        },
-        'image': {
-            'path': 'tests/fixtures/image.png',
-            'url': 'https://ru.hexlet.io/assets/professions/nodejs.png',
-            'name': 'ru-hexlet-io-assets-professions-nodejs.png',
-        },
-        'script': {
-            'path': 'tests/fixtures/script.js',
-            'url': 'https://ru.hexlet.io/packs/js/runtime.js',
-            'name': 'ru-hexlet-io-packs-js-runtime.js',
-        },
-        'style': {
-            'path': 'tests/fixtures/style.css',
-            'url': 'https://ru.hexlet.io/assets/application.css',
-            'name': 'ru-hexlet-io-assets-application.css',
-        },
-    }
-
-    for attributes in assets.values():
-        with open(attributes['path'], 'rb') as file_content:
-            attributes['content'] = file_content.read()
-    return assets
+def page_without_resources():
+    return '<html></html>'
 
 
-def test_download(requests_mock, assets):
-    """Test 'download' function.
+@pytest.fixture
+def page_with_resources(requests_mock):
+    content = open(get_fixture('remote_page.html')).read()
+    requests_mock.get(URL, text=content)
 
-    - webpage is downloaded and processed correctly
-    - local sources are downloaded to 'files' directory and saved correctly
+    file_url = urljoin(URL, '/assets/professions/python.png')
+    file = open(get_fixture('image.png'), 'rb').read()
+    requests_mock.get(url=file_url, content=file)
 
-    Args:
-        requests_mock: external fixture
-        assets: dictionary with assets
-    """
-    page_expected = assets.pop('page_expected')
+    css_url = urljoin(URL, '/assets/application.css')
+    css = open(get_fixture('style.css'), 'rb').read()
+    requests_mock.get(url=css_url, content=css)
 
-    for _, asset in assets.items():
-        url = asset['url']
-        file_content = asset['content']
+    script_url = urljoin(URL, '/packs/js/runtime.js')
+    script = open(get_fixture('script.js'), 'rb').read()
+    requests_mock.get(url=script_url, content=script)
 
-        requests_mock.get(url, content=file_content)
 
-    page = assets.pop('page')
+def test_download_without_resources(requests_mock, tmpdir, page_without_resources):
+    requests_mock.get(URL, text=page_without_resources)
+    page_path = download(URL, tmpdir)
+    assert page_path == os.path.join(tmpdir, LOCAL_URL + '.html')
+    assert os.access(page_path, mode=os.F_OK)
 
-    with tempfile.TemporaryDirectory() as tmpdirname:
-        # Webpage is downloaded and processed correctly
-        page_path_expected = os.path.join(tmpdirname, page['name'])
-        page_path = download(page['url'], tmpdirname)
 
-        assert page_path == page_path_expected
+def test_download_page_with_resources(page_with_resources, tmpdir):
+    download(URL, tmpdir)
+    with os.scandir(tmpdir) as d:
+        for entry in d:
+            if entry.is_dir():
+                files_dir = entry.path
 
-        with open(page_path, 'rb') as page_object:
-            assert page_object.read() == page_expected['content']
+    fixtures = [get_fixture(x) for x in ['remote_page.html', 'style.css', 'image.png', 'script.js']]
+    files = [os.path.join(files_dir, x) for x in os.listdir(files_dir)]
+    assert sorted(map(os.path.getsize, files)) == sorted(map(os.path.getsize, fixtures))
 
-        # Assets are downloaded to 'files' directory and saved correctly
-        files_name = 'ru-hexlet-io-courses_files'
-        files_path = os.path.join(tmpdirname, files_name)
 
-        for attributes in assets.values():
-            asset_path = os.path.join(files_path, attributes['name'])
-
-            assert os.path.exists(asset_path)
-
-            with open(asset_path, 'rb') as asset_object:
-                assert asset_object.read() == attributes['content']
+def test_pass_download_unreachable_resources(requests_mock, tmpdir):
+    file_url = urljoin(URL, '/assets/professions/python.png')
+    local_url = make_local_name(file_url)
+    file = {file_url: local_url}
+    requests_mock.get(file_url, status_code=404)
+    assert download_resources(file, tmpdir) is None

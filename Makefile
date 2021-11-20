@@ -1,26 +1,32 @@
+repl:
+	poetry run ipython
+
 install:
 	poetry install
 
-selfcheck:
-	poetry check
+run:
+	poetry run page-loader
 
-lint:
-	poetry run flake8 page_loader
-	poetry run flake8 tests
+build: check
+	rm -rf dist/
+	poetry build
 
 test:
 	poetry run pytest
 
 test-coverage:
-	poetry run pytest --cov=page_loader --cov-report xml tests
+	poetry run pytest --cov=page_loader --cov-report xml
 
-check: selfcheck lint
+lint:
+	poetry run flake8 page_loader/
 
-build: check
-	poetry build
+selfcheck:
+	poetry check
 
-publish:
-	poetry publish --dry-run
+check: selfcheck test lint
 
 package-install:
-	pip install --user dist/*.whl
+	python3 -m pip uninstall hexlet-code -y
+	python3 -m pip install --user dist/*.whl
+
+.PHONY: install test lint selfcheck check build
